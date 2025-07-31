@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Image Upscaler & Enhancer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/camanjs/4.1.2/caman.full.min.js"></script>
+    <style>
+        :root {
+            --primary-bg: #0f1419;
+            --secondary-bg: #1a1f2e;
+            --card-bg: #252a3a;
+            --accent-bg: #2d3748;
+            --primary-text: #e2e8f0;
+            --secondary-text: #a0aec0;
+            --accent-text: #64ffda;
+            --border-color: #3a4a5c;
+            --primary-color: #00d4ff;
+            --secondary-color: #7c3aed;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="light"] {
+            --primary-bg: #f8fafc;
+            --secondary-bg: #ffffff;
+            --card-bg: #ffffff;
+            --accent-bg: #f1f5f9;
+            --primary-text: #1e293b;
+            --secondary-text: #64748b;
+            --accent-text: #0ea5e9;
+            --border-color: #e2e8f0;
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--primary-bg);
+            color: var(--primary-text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .background-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0a0a1a 100%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px 0;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: var(--gradient-3);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: var(--secondary-text);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+
+        .glass-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-xl);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 20px;
+            padding: 60px 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--accent-bg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .upload-zone:hover::before {
+            left: 100%;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary-color);
+            background: var(--card-bg);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+        }
+
+        .upload-zone:hover .upload-icon {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .upload-text {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: var(--primary-text);
+        }
+
+        .upload-subtext {
+            color: var(--secondary-text);
+            font-size: 0.9rem;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .control-section {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid var(--border-color);
+        }
+
+        .control-section h3 {
+            color: var(--accent-text);
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--primary-text);
+        }
+
+        .control-value {
+            background: var(--primary-color);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--accent-bg);
+            outline: none;
+            -webkit-appearance: none;
+            position: relative;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--gradient-3);
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 212, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.5);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--gradient-3);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0, 212, 255, 0.3);
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .preset-btn {
+            background: var(--gradient-1);
+            border: none;
+            border-radius: 12px;
+            padding: 15px 20px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preset-btn:nth-child(2) { background: var(--gradient-2); }
+        .preset-btn:nth-child(3) { background: var(--gradient-3); }
+        .preset-btn:nth-child(4) { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .preset-btn:nth-child(5) { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+        .preset-btn:nth-child(6) { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+
+        .preset-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .preset-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .image-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .image-panel {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .image-panel h3 {
+            color: var(--accent-text);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .image-container {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--accent-bg);
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-container img, .image-container canvas {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 10px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .image-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding: 10px;
+            background: var(--accent-bg);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--secondary-text);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--accent-bg);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--accent-bg);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-3);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .upscale-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .upscale-option {
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upscale-option:hover {
+            border-color: var(--primary-color);
+            background: var(--accent-bg);
+        }
+
+        .upscale-option.selected {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .advanced-controls {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .advanced-controls.active {
+            display: block;
+        }
+
+        .toggle-advanced {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--primary-text);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-advanced:hover {
+            background: var(--accent-bg);
+            border-color: var(--primary-color);
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 1024px) {
+            .image-comparison {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .image-comparison {
+                grid-template-columns: 1fr;
+            }
+            
+            .preset-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-pattern"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>Advanced Image Upscaler</h1>
+            <p>Professional-grade image enhancement with AI-powered upscaling and advanced filters</p>
+        </div>
+
+        <div class="glass-card">
+            <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                </div>
+                <div class="upload-text">Drop your image here or click to browse</div>
+                <div class="upload-subtext">Supports JPG, PNG, WebP up to 10MB</div>
+                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <h3 style="color: var(--accent-text); margin-bottom: 20px;">🚀 AI Upscaling Options</h3>
+            <div class="upscale-options">
+                <div class="upscale-option selected" data-scale="2">2x Upscale</div>
+                <div class="upscale-option" data-scale="3">3x Upscale</div>
+                <div class="upscale-option" data-scale="4">4x Upscale</div>
+                <div class="upscale-option" data-scale="custom">Custom</div>
+            </div>
+            <div id="customScale" style="display: none; margin-top: 15px;">
+                <label class="control-label">
+                    Custom Scale Factor
+                    <span class="control-value" id="customScaleValue">2.5</span>
+                </label>
+                <input type="range" class="slider" id="customScaleSlider" min="1.1" max="8" step="0.1" value="2.5">
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <h3 style="color: var(--accent-text); margin-bottom: 20px;">✨ Enhancement Presets</h3>
+            <div class="preset-grid">
+                <button class="preset-btn" data-preset="auto">🎯 Auto Enhance</button>
+                <button class="preset-btn" data-preset="portrait">👤 Portrait Pro</button>
+                <button class="preset-btn" data-preset="landscape">🌄 Landscape</button>
+                <button class="preset-btn" data-preset="vintage">📸 Vintage</button>
+                <button class="preset-btn" data-preset="vibrant">🌈 Vibrant</button>
+                <button class="preset-btn" data-preset="monochrome">⚫ Monochrome</button>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="color: var(--accent-text); margin: 0;">⚙️ Advanced Controls</h3>
+                <button class="toggle-advanced" onclick="toggleAdvanced()">Show Advanced</button>
+            </div>
+            
+            <div class="controls-grid">
+                <div class="control-section">
+                    <h3>Basic Adjustments</h3>
+                    <div class="control-group">
+                        <label class="control-label">
+                            Brightness
+                            <span class="control-value" id="brightnessValue">0</span>
+                        </label>
+                        <input type="range" class="slider" id="brightness" min="-100" max="100" value="0">
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">
+                            Contrast
+                            <span class="control-value" id="contrastValue">0</span>
+                        </label>
+                        <input type="range" class="slider" id="contrast" min="-100" max="100" value="0">
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">
+                            Saturation
+                            <span class="control-value" id="saturationValue">0</span>
+                        </label>
+                        <input type="range" class="slider" id="saturation" min="-100" max="100" value="0">
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Color & Tone</h3>
+                    <div class="control-group">
+                        <label class="control-label">
+                            Vibrance
+                            <span class="control-value" id="vibranceValue">0</span>
+                        </label>
+                        <input type="range" class="slider" id="vibrance" min="-100" max="100" value="0">
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">
+                            Exposure
+                            <span class="control-value" id="exposureValue">0</span>
+                        </label>
+                        <input type="range" class="slider" id="exposure" min="-100" max="100" value="0">
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">
+                            Hue Shift
+                            <span class="control-value" id="hueValue">0</span>
+                        </label>
+                        <input type="range" class="slider" id="hue" min="-180" max="180" value="0">
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Enhancement</h3>
+                    <div class="control-group">
+                        <label class="control-label">
+                            Sharpness
+                            <span class="control-value" id="sharpnessValue">0</span>
+                        </label>
+                        <input type="range" class="slider" id="sharpness" min="0" max="100" value="0">
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">
+                            Noise Reduction
+                            <span class="control-value" id="noiseValue">0</span>
+                        </label>
+                        <input type="range" class="slider" id="noise" min="0" max="100" value="0">
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">
+                            Clarity
+                            <span class="control-value" id="clarityValue">0</span>
+                        </label>
+                        <input type="range" class="slider" id="clarity" min="0" max="100" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <div class="advanced-controls" id="advancedControls">
+                <div class="controls-grid">
+                    <div class="control-section">
+                        <h3>Advanced Filters</h3>
+                        <div class="control-group">
+                            <label class="control-label">
+                                Sepia
+                                <span class="control-value" id="sepiaValue">0</span>
+                            </label>
+                            <input type="range" class="slider" id="sepia" min="0" max="100" value="0">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">
+                                Vintage
+                                <span class="control-value" id="vintageValue">0</span>
+                            </label>
+                            <input type="range" class="slider" id="vintage" min="0" max="100" value="0">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">
+                                Cross Process
+                                <span class="control-value" id="crossProcessValue">0</span>
+                            </label>
+                            <input type="range" class="slider" id="crossProcess" min="0" max="100" value="0">
+                        </div>
+                    </div>
+
+                    <div class="control-section">
+                        <h3>Color Grading</h3>
+                        <div class="control-group">
+                            <label class="control-label">
+                                Highlights
+                                <span class="control-value" id="highlightsValue">0</span>
+                            </label>
+                            <input type="range" class="slider" id="highlights" min="-100" max="100" value="0">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">
+                                Shadows
+                                <span class="control-value" id="shadowsValue">0</span>
+                            </label>
+                            <input type="range" class="slider" id="shadows" min="-100" max="100" value="0">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">
+                                Gamma
+                                <span class="control-value" id="gammaValue">1.0</span>
+                            </label>
+                            <input type="range" class="slider" id="gamma" min="0.1" max="3.0" step="0.1" value="1.0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-primary" id="previewBtn" disabled>👁️ Preview Upscale</button>
+            <button class="btn btn-secondary" id="applyBtn" disabled>✨ Apply Filters</button>
+            <button class="btn btn-warning" id="resetBtn" disabled>🔄 Reset All</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing your image...</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <div class="image-comparison" id="imageComparison" style="display: none;">
+            <div class="image-panel">
+                <h3>📷 Original Image</h3>
+                <div class="image-container">
+                    <img id="originalImage" alt="Original image">
+                </div>
+                <div class="image-info">
+                    <span id="originalInfo">No image loaded</span>
+                </div>
+            </div>
+            
+            <div class="image-panel" id="previewPanel" style="display: none;">
+                <h3>🔍 Upscale Preview</h3>
+                <div class="image-container">
+                    <canvas id="previewCanvas"></canvas>
+                </div>
+                <div class="image-info">
+                    <span id="previewInfo">No preview generated</span>
+                </div>
+                <div class="preview-actions">
+                    <button class="btn btn-success btn-small" id="applyUpscaleBtn">✅ Apply Upscale</button>
+                    <button class="btn btn-primary btn-small" id="downloadPreviewBtn">💾 Download Preview</button>
+                </div>
+            </div>
+            
+            <div class="image-panel">
+                <h3>✨ Enhanced Image</h3>
+                <div class="image-container">
+                    <canvas id="canvas"></canvas>
+                </div>
+                <div class="image-info">
+                    <span id="enhancedInfo">No enhancement applied</span>
+                </div>
+                <div class="preview-actions">
+                    <button class="btn btn-success btn-small" id="downloadBtn" disabled>💾 Download Final</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables
+        let currentImage = null;
+        let originalImageData = null;
+        let previewImage = null;
+        let currentScale = 2;
+        let isProcessing = false;
+
+        // DOM Elements
+        const fileInput = document.getElementById('fileInput');
+        const originalImage = document.getElementById('originalImage');
+        const canvas = document.getElementById('canvas');
+        const previewCanvas = document.getElementById('previewCanvas');
+        const loading = document.getElementById('loading');
+        const progressFill = document.getElementById('progressFill');
+        const imageComparison = document.getElementById('imageComparison');
+        const previewPanel = document.getElementById('previewPanel');
+        // Complete the missing JavaScript code for the image upscaler
+
+// Continue from where the original code was cut off
+const originalInfo = document.getElementById('originalInfo');
+const previewInfo = document.getElementById('previewInfo');
+const enhancedInfo = document.getElementById('enhancedInfo');
+
+// Initialize event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    initializeApp();
+});
+
+function initializeApp() {
+    // File input handler
+    fileInput.addEventListener('change', handleFileSelect);
+    
+    // Drag and drop handlers
+    const uploadZone = document.querySelector('.upload-zone');
+    uploadZone.addEventListener('dragover', handleDragOver);
+    uploadZone.addEventListener('drop', handleDrop);
+    
+    // Button handlers
+    document.getElementById('previewBtn').addEventListener('click', previewUpscale);
+    document.getElementById('applyBtn').addEventListener('click', applyFilters);
+    document.getElementById('resetBtn').addEventListener('click', resetAll);
+    document.getElementById('downloadBtn').addEventListener('click', downloadFinal);
+    document.getElementById('downloadPreviewBtn').addEventListener('click', downloadPreview);
+    document.getElementById('applyUpscaleBtn').addEventListener('click', applyUpscale);
+    
+    // Preset handlers
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', applyPreset);
+    });
+    
+    // Upscale option handlers
+    document.querySelectorAll('.upscale-option').forEach(option => {
+        option.addEventListener('click', selectUpscaleOption);
+    });
+    
+    // Slider handlers
+    initializeSliders();
+}
+
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) {
+        loadImage(file);
+    }
+}
+
+function handleDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+}
+
+function handleDrop(event) {
+    event.preventDefault();
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+        loadImage(files[0]);
+    }
+}
+
+function loadImage(file) {
+    if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file.');
+        return;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        alert('File size too large. Please select an image under 10MB.');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            currentImage = img;
+            originalImage.src = e.target.result;
+            originalImageData = e.target.result;
+            
+            // Update UI
+            imageComparison.style.display = 'grid';
+            enableButtons();
+            updateImageInfo();
+            
+            // Initialize canvas
+            setupCanvas();
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function setupCanvas() {
+    const ctx = canvas.getContext('2d');
+    canvas.width = currentImage.width;
+    canvas.height = currentImage.height;
+    ctx.drawImage(currentImage, 0, 0);
+}
+
+function updateImageInfo() {
+    const size = (currentImage.width * currentImage.height * 4 / 1024 / 1024).toFixed(2);
+    originalInfo.textContent = `${currentImage.width}×${currentImage.height} (${size}MB)`;
+}
+
+function enableButtons() {
+    document.getElementById('previewBtn').disabled = false;
+    document.getElementById('applyBtn').disabled = false;
+    document.getElementById('resetBtn').disabled = false;
+}
+
+function selectUpscaleOption(event) {
+    document.querySelectorAll('.upscale-option').forEach(opt => opt.classList.remove('selected'));
+    event.target.classList.add('selected');
+    
+    const scale = event.target.dataset.scale;
+    const customScaleDiv = document.getElementById('customScale');
+    
+    if (scale === 'custom') {
+        customScaleDiv.style.display = 'block';
+        currentScale = parseFloat(document.getElementById('customScaleSlider').value);
+    } else {
+        customScaleDiv.style.display = 'none';
+        currentScale = parseInt(scale);
+    }
+}
+
+function previewUpscale() {
+    if (!currentImage || isProcessing) return;
+    
+    isProcessing = true;
+    showLoading();
+    
+    setTimeout(() => {
+        const previewCtx = previewCanvas.getContext('2d');
+        const newWidth = Math.floor(currentImage.width * currentScale);
+        const newHeight = Math.floor(currentImage.height * currentScale);
+        
+        previewCanvas.width = newWidth;
+        previewCanvas.height = newHeight;
+        
+        // Simple upscaling using canvas scaling
+        previewCtx.imageSmoothingEnabled = false;
+        previewCtx.drawImage(currentImage, 0, 0, newWidth, newHeight);
+        
+        // Apply basic sharpening filter
+        applySharpening(previewCtx, newWidth, newHeight);
+        
+        previewPanel.style.display = 'block';
+        const previewSize = (newWidth * newHeight * 4 / 1024 / 1024).toFixed(2);
+        previewInfo.textContent = `${newWidth}×${newHeight} (${previewSize}MB)`;
+        
+        hideLoading();
+        isProcessing = false;
+    }, 100);
+}
+
+function applySharpening(ctx, width, height) {
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+    
+    // Simple sharpening kernel
+    const kernel = [
+        0, -1, 0,
+        -1, 5, -1,
+        0, -1, 0
+    ];
+    
+    const newData = new Uint8ClampedArray(data);
+    
+    for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+            for (let c = 0; c < 3; c++) {
+                let sum = 0;
+                for (let ky = -1; ky <= 1; ky++) {
+                    for (let kx = -1; kx <= 1; kx++) {
+                        const idx = ((y + ky) * width + (x + kx)) * 4 + c;
+                        sum += data[idx] * kernel[(ky + 1) * 3 + (kx + 1)];
+                    }
+                }
+                newData[(y * width + x) * 4 + c] = Math.max(0, Math.min(255, sum));
+            }
+        }
+    }
+    
+    const newImageData = new ImageData(newData, width, height);
+    ctx.putImageData(newImageData, 0, 0);
+}
+
+function applyUpscale() {
+    if (!previewCanvas.width) return;
+    
+    const ctx = canvas.getContext('2d');
+    canvas.width = previewCanvas.width;
+    canvas.height = previewCanvas.height;
+    ctx.drawImage(previewCanvas, 0, 0);
+    
+    const size = (canvas.width * canvas.height * 4 / 1024 / 1024).toFixed(2);
+    enhancedInfo.textContent = `${canvas.width}×${canvas.height} (${size}MB)`;
+    document.getElementById('downloadBtn').disabled = false;
+}
+
+function applyFilters() {
+    if (!currentImage || isProcessing) return;
+    
+    isProcessing = true;
+    showLoading();
+    
+    setTimeout(() => {
+        const ctx = canvas.getContext('2d');
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        // Get slider values
+        const brightness = parseInt(document.getElementById('brightness').value);
+        const contrast = parseInt(document.getElementById('contrast').value);
+        const saturation = parseInt(document.getElementById('saturation').value);
+        const hue = parseInt(document.getElementById('hue').value);
+        
+        // Apply filters
+        applyColorAdjustments(data, brightness, contrast, saturation, hue);
+        
+        ctx.putImageData(imageData, 0, 0);
+        
+        const size = (canvas.width * canvas.height * 4 / 1024 / 1024).toFixed(2);
+        enhancedInfo.textContent = `${canvas.width}×${canvas.height} (${size}MB) - Enhanced`;
+        document.getElementById('downloadBtn').disabled = false;
+        
+        hideLoading();
+        isProcessing = false;
+    }, 100);
+}
+
+function applyColorAdjustments(data, brightness, contrast, saturation, hue) {
+    for (let i = 0; i < data.length; i += 4) {
+        let r = data[i];
+        let g = data[i + 1];
+        let b = data[i + 2];
+        
+        // Apply brightness
+        r += brightness * 255 / 100;
+        g += brightness * 255 / 100;
+        b += brightness * 255 / 100;
+        
+        // Apply contrast
+        const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+        r = factor * (r - 128) + 128;
+        g = factor * (g - 128) + 128;
+        b = factor * (b - 128) + 128;
+        
+        // Apply saturation
+        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+        const satFactor = saturation / 100;
+        r = gray + (r - gray) * (1 + satFactor);
+        g = gray + (g - gray) * (1 + satFactor);
+        b = gray + (b - gray) * (1 + satFactor);
+        
+        // Clamp values
+        data[i] = Math.max(0, Math.min(255, r));
+        data[i + 1] = Math.max(0, Math.min(255, g));
+        data[i + 2] = Math.max(0, Math.min(255, b));
+    }
+}
+
+function applyPreset(event) {
+    const preset = event.target.dataset.preset;
+    
+    const presets = {
+        auto: { brightness: 10, contrast: 15, saturation: 20, sharpness: 25 },
+        portrait: { brightness: 5, contrast: 10, saturation: 15, sharpness: 30 },
+        landscape: { brightness: 15, contrast: 25, saturation: 30, sharpness: 20 },
+        vintage: { brightness: -10, contrast: -5, saturation: -20, sepia: 40 },
+        vibrant: { brightness: 20, contrast: 30, saturation: 50, sharpness: 15 },
+        monochrome: { brightness: 0, contrast: 20, saturation: -100, sharpness: 10 }
+    };
+    
+    const settings = presets[preset];
+    if (settings) {
+        Object.keys(settings).forEach(key => {
+            const slider = document.getElementById(key);
+            if (slider) {
+                slider.value = settings[key];
+                updateSliderValue(key, settings[key]);
+            }
+        });
+    }
+}
+
+function resetAll() {
+    if (!currentImage) return;
+    
+    // Reset all sliders
+    document.querySelectorAll('.slider').forEach(slider => {
+        slider.value = slider.min || 0;
+        updateSliderValue(slider.id, slider.value);
+    });
+    
+    // Reset canvas
+    setupCanvas();
+    
+    // Hide preview
+    previewPanel.style.display = 'none';
+    
+    // Reset info
+    updateImageInfo();
+    enhancedInfo.textContent = 'No enhancement applied';
+    document.getElementById('downloadBtn').disabled = true;
+}
+
+function initializeSliders() {
+    document.querySelectorAll('.slider').forEach(slider => {
+        slider.addEventListener('input', function() {
+            updateSliderValue(this.id, this.value);
+        });
+        
+        // Initialize display values
+        updateSliderValue(slider.id, slider.value);
+    });
+    
+    // Custom scale slider
+    document.getElementById('customScaleSlider').addEventListener('input', function() {
+        currentScale = parseFloat(this.value);
+        updateSliderValue('customScale', this.value);
+    });
+}
+
+function updateSliderValue(id, value) {
+    const valueElement = document.getElementById(id + 'Value');
+    if (valueElement) {
+        valueElement.textContent = value;
+    }
+}
+
+function toggleAdvanced() {
+    const advancedControls = document.getElementById('advancedControls');
+    const toggleBtn = document.querySelector('.toggle-advanced');
+    
+    if (advancedControls.classList.contains('active')) {
+        advancedControls.classList.remove('active');
+        toggleBtn.textContent = 'Show Advanced';
+    } else {
+        advancedControls.classList.add('active');
+        toggleBtn.textContent = 'Hide Advanced';
+    }
+}
+
+function downloadFinal() {
+    if (!canvas.width) return;
+    
+    const link = document.createElement('a');
+    link.download = 'enhanced-image.png';
+    link.href = canvas.toDataURL();
+    link.click();
+}
+
+function downloadPreview() {
+    if (!previewCanvas.width) return;
+    
+    const link = document.createElement('a');
+    link.download = 'upscaled-preview.png';
+    link.href = previewCanvas.toDataURL();
+    link.click();
+}
+
+function showLoading() {
+    loading.classList.add('active');
+    simulateProgress();
+}
+
+function hideLoading() {
+    loading.classList.remove('active');
+    progressFill.style.width = '0%';
+}
+
+function simulateProgress() {
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 100) {
+            progress = 100;
+            clearInterval(interval);
+        }
+        progressFill.style.width = progress + '%';
+    }, 100);
+}
+
+ </script>
+</body>
+</html>
+
+
